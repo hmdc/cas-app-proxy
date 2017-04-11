@@ -1,0 +1,18 @@
+---
+nginx-proxy:
+  image: jwilder/nginx-proxy
+  container_name: nginx-proxy
+  ports:
+    - "80:80"
+    - "443:443"
+  volumes:
+    - /var/run/docker.sock:/tmp/docker.sock:ro
+    - ./ssl/self-signed-development.crt:/etc/nginx/certs/harvard-rce.azurewebsites.net.crt
+    - ./ssl/self-signed-development.key:/etc/nginx/certs/harvard-rce.azurewebsites.net.key
+  environment:
+    - DEFAULT_HOST=backup-service.priv.hmdc.harvard.edu
+web:
+  build: .
+  environment: 
+    - VIRTUAL_HOST=backup-service.priv.hmdc.harvard.edu
+    - NODE_ENV="dev"
