@@ -30,14 +30,18 @@ passport.use(new passport_cas.Strategy({
     serviceURL: 'https://backup-service.priv.hmdc.harvard.edu',
 }, function(login, cb) {
     console.log('In strategy callback: ', login);
-    if (login.attributes.mail == app.locals.VALIDUSER) {
-        cb(null, login.attributes.mail);
-    } else {
-        cb(null, login, { message: 'Unknown results'});
-    }
+    cb(null, login.attributes.mail);
 }));
 
 // view engine setup
+
+passport.serializeUser((user, done) => {
+    done(null, user);
+});
+
+passport.deserializeUser((user, done) => {
+    done(null, user);
+});
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -55,8 +59,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Authenticate
-app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (res, req) => {
-    console.log(req);
+app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (req, res) => {
+    res.render('index', { title: 'Express' });
 });
 
 // app.use('/', routes);
