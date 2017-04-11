@@ -60,7 +60,17 @@ app.use(passport.session());
 
 // Authenticate
 app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (req, res) => {
-    res.render('index', { title: 'Express' });
+    console.log(`Authenticated as ${req.user}`);
+    switch (req.user) {
+        case app.locals.VALIDUSER:
+            res.render('index', { title: 'Express'});
+            break;
+        case undefined:
+            res.status(401).send('User information not found in session.');
+            break;
+        default:
+            res.status(401).send('User not authorized.')
+    }
 });
 
 // app.use('/', routes);
