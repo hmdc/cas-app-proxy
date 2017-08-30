@@ -1,6 +1,7 @@
 var express = require('express');
 var path = require('path');
 var favicon = require('serve-favicon');
+var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
@@ -14,8 +15,6 @@ var app = express();
 
 var env = process.env.NODE_ENV || 'development';
 app.locals.ENV = env;
-// This will only proxy the user if the e-mail attribute matches esarmien@hmdc.harvard.edu.
-// At some point this should just use the Harvard LDAP short username since it is unchangab
 app.locals.DEST = process.env.DEST || '127.0.0.1';
 app.locals.DESTPORT = process.env.DESTPORT || 8080;
 app.locals.VALIDUSER = process.env.VALIDUSER || 'esarmien@hmdc.harvard.edu';
@@ -25,11 +24,10 @@ app.locals.ENV_DEVELOPMENT = env == 'development';
 passport.use(new passport_cas.Strategy({
     version: 'CAS3.0',
     ssoBaseURL: 'https://www.pin1.harvard.edu/cas',
-    serverBaseURL: 'https://backup-service.priv.hmdc.harvard.edu',
+    serverBaseURL: 'https://aws.sid.hmdc.harvard.edu',
     validateURL: '/serviceValidate',
-    serviceURL: 'https://backup-service.priv.hmdc.harvard.edu',
+    serviceURL: 'https://aws.sid.hmdc.harvard.edu'
 }, function(login, cb) {
-    console.log('In strategy callback: ', login);
     cb(null, login.attributes.mail);
 }));
 
@@ -59,11 +57,11 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // Authenticate
-app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (req, res) => {
+app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (req, res, next) => {
     console.log(`Authenticated as ${req.user}`);
     switch (req.user) {
         case app.locals.VALIDUSER:
-            res.render('index', { title: 'Express'});
+            next();
             break;
         case undefined:
             res.status(401).send('User information not found in session.');
@@ -73,20 +71,13 @@ app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized
     }
 });
 
-// app.use('/', routes);
-// app.use('/users', users);
+app.use('/', proxy({target: 'http://127.0.0.1:8080', ws: true}));
 
-/// catch 404 and forward to error handler
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
 });
-
-/// error handlers
-
-// development error handler
-// will print stacktrace
 
 if (app.get('env') === 'development') {
     app.use(function(err, req, res, next) {

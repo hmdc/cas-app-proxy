@@ -7,13 +7,13 @@ nginx-proxy:
     - "443:443"
   volumes:
     - /var/run/docker.sock:/tmp/docker.sock:ro
-    - ./ssl/self-signed-development.crt:/etc/nginx/certs/backup-service.priv.hmdc.harvard.edu.crt
-    - ./ssl/self-signed-development.key:/etc/nginx/certs/backup-service.priv.hmdc.harvard.edu.key
+    - ./ssl/self-signed-development.crt:/etc/nginx/certs/development.sid.hmdc.harvard.edu.crt
+    - ./ssl/self-signed-development.key:/etc/nginx/certs/development.sid.hmdc.harvard.edu.key
   environment:
-    - DEFAULT_HOST=backup-service.priv.hmdc.harvard.edu
+    - DEFAULT_HOST=development.sid.hmdc.harvard.edu
 web:
   build: .
   environment: 
-    - VIRTUAL_HOST=backup-service.priv.hmdc.harvard.edu
+    - VIRTUAL_HOST=development.sid.hmdc.harvard.edu
     - NODE_ENV="dev"
     - VIRTUAL_PORT=3000

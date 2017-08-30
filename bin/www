@@ -1,8 +1,23 @@
 #!/usr/bin/env node
+var fs = require('fs');
 var app = require('../app');
-
+var https = require('https');
+var http = require('http');
+var credentials = {
+  key: fs.readFileSync('./ssl/self-signed-development.key', 'utf-8'),
+  cert: fs.readFileSync('./ssl/self-signed-development.crt', 'utf-8')
+};
 app.set('port', process.env.PORT || 3000);
 
-var server = app.listen(app.get('port'), function() {
-  console.log('Express server listening on port ' + server.address().port);
+// var server = app.listen(app.get('port'), function() {
+//  console.log('Express server listening on port ' + server.address().port);
+// });
+
+HTTP_PORT = 80
+var secureServer = https.createServer(credentials, app).listen(443, function() {
+  console.log("Listening on 443");
+});
+
+var insecureServer = http.createServer(app).listen(HTTP_PORT, function() {
+    console.log('Insecure Server listening on port ' + HTTP_PORT);
 });
