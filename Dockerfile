@@ -1,3 +1,4 @@
 FROM node:4-onbuild
-EXPOSE 3000
+EXPOSE 8080
+ENV NODE_ENV production
 RUN apt-get -y update

@@ -14,7 +14,7 @@ var env = process.env.NODE_ENV || 'development';
 app.locals.ENV = env;
 app.locals.SESSION_SECRET = process.env.SESSION_SECRET || uuid.v4();
 app.locals.DEST = process.env.DEST || '127.0.0.1';
-app.locals.DESTPORT = process.env.DESTPORT || 8080;
+app.locals.DESTPORT = process.env.DESTPORT || 9000;
 app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 
