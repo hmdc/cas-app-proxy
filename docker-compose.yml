@@ -1,19 +1,24 @@
 ---
-nginx-proxy:
-  image: jwilder/nginx-proxy
-  container_name: nginx-proxy
-  ports:
-    - "80:80"
-    - "443:443"
-  volumes:
-    - /var/run/docker.sock:/tmp/docker.sock:ro
-    - ./ssl/self-signed-development.crt:/etc/nginx/certs/development.sid.hmdc.harvard.edu.crt
-    - ./ssl/self-signed-development.key:/etc/nginx/certs/development.sid.hmdc.harvard.edu.key
-  environment:
-    - DEFAULT_HOST=development.sid.hmdc.harvard.edu
-web:
-  build: .
-  environment: 
-    - VIRTUAL_HOST=development.sid.hmdc.harvard.edu
-    - NODE_ENV="dev"
-    - VIRTUAL_PORT=3000
+version: "3"
+services:
+  casproxy:
+    build: .
+    environment: 
+      - NODE_ENV=development
+      - VALIDUSER=evs767
+      - DESTPORT=8080
+      - DEST=sid_desktop
+    ports:
+      - "443:443"
+    links:
+      - sid_desktop
+    depends_on:
+      - sid_desktop
+  sid_desktop:
+    image: hmdc/sid-desktop:latest
+    ports:
+      - "8080"
+
+
+
+
