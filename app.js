@@ -1,6 +1,5 @@
 var express = require('express');
 var path = require('path');
-var favicon = require('serve-favicon');
 var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
@@ -26,9 +25,24 @@ passport.use(new passport_cas.Strategy({
     ssoBaseURL: 'https://www.pin1.harvard.edu/cas',
     serverBaseURL: 'https://aws.sid.hmdc.harvard.edu',
     validateURL: '/serviceValidate',
-    serviceURL: 'https://aws.sid.hmdc.harvard.edu'
+    serviceURL: 'https://aws.sid.hmdc.harvard.edu/authenticate'
 }, function(login, cb) {
-    cb(null, login.attributes.netid);
+
+    switch (login.attributes.netid) {
+        case app.locals.VALIDUSER:
+            cb(null, login.attributes.netid);
+            break;
+        case undefined:
+            var err = new Error('User data not found in session.');
+            err.status = 401;
+            cb(err);
+        default:
+            var err = new Error('User not authorized.');
+            err.status = 401;
+            cb(err);
+            break;
+    }
+
 }));
 
 passport.serializeUser((user, done) => {
@@ -45,27 +59,28 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(cookieParser());
-app.use(require('express-session')({ secret: app.locals.SESSION_SECRET }));
+app.use(require('express-session')({ secret: 'keyboard cat' }));
 app.use(passport.initialize());
 app.use(passport.session());
 
 
-// Authenticate
-app.use('/', passport.authenticate('cas', { failureRedirect: '/#!/not-authorized' }), (req, res, next) => {
-    console.log(`Authenticated as ${req.user}`);
-    switch (req.user) {
-        case app.locals.VALIDUSER:
-            next();
-            break;
-        case undefined:
-            var err = new Error('User data not found in session.');
-            err.status = 401;
-            next(err);
-        default:
-            var err = new Error('User not authorized.');
-            err.status = 401;
-            next(err);
-            break;
+app.use('/authenticate', passport.authenticate('cas', {
+    successRedirect: '/',
+    failureRedirect: '/authentication-failure',
+    failureFlash: true
+}));
+
+app.use('/authentication-failure', function(req, res, next) {
+    var err = new Error('Not authorized');
+    err.status = 401;
+    next(err);
+});
+
+app.use('/', function(req, res, next) {
+    if (req.user) {
+        next();
+    } else {
+        res.redirect('/authenticate');
     }
 });
 
