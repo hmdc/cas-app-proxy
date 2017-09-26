@@ -87,7 +87,15 @@ app.use('/' + app.locals.JOB_ID + '/', function(req, res, next) {
     }
 });
 
-app.use('/' + app.locals.JOB_ID + '/', proxy({ target: DESTURI, ws: true }));
+var proxyConfiguration = {
+    target: DESTURI,
+    ws: true,
+    pathRewrite: {}
+}
+
+proxyConfiguration['pathRewrite'][`^/${app.locals.JOBID}`] = '/';
+
+app.use('/' + app.locals.JOB_ID + '/', proxy(proxyConfiguration));
 
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
