@@ -8,6 +8,7 @@ services:
       - VALIDUSER=evs767
       - DESTPORT=8080
       - DEST=sid_desktop
+      - SERVICE_URL=https://aws.sid.hmdc.harvard.edu/authenticate
     ports:
       - "443:443"
     links:

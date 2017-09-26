@@ -4,7 +4,7 @@ var fs = require('fs');
 var app = require('../app');
 var https = require('https');
 var http = require('http');
-HTTP_PORT = 8080
+HTTP_PORT = 8000
 if (app.locals.ENV == 'development') {
     // This is useful for CAS testing.
     var credentials = {

@@ -16,6 +16,7 @@ app.locals.DEST = process.env.DEST || '127.0.0.1';
 app.locals.DESTPORT = process.env.DESTPORT || 9000;
 app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
+app.locals.SERVICE_URL = process.env.SERVICE_URL;
 
 const DESTURI = `http://${app.locals.DEST}:${app.locals.DESTPORT}`;
 
@@ -25,7 +26,7 @@ passport.use(new passport_cas.Strategy({
     ssoBaseURL: 'https://www.pin1.harvard.edu/cas',
     serverBaseURL: 'https://aws.sid.hmdc.harvard.edu',
     validateURL: '/serviceValidate',
-    serviceURL: 'https://aws.sid.hmdc.harvard.edu/authenticate'
+    serviceURL: app.locals.SERVICE_URL
 }, function(login, cb) {
 
     switch (login.attributes.netid) {
