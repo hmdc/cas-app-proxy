@@ -67,19 +67,19 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 
-app.use(app.locals.JOB_ID + '/authenticate', passport.authenticate('cas', {
+app.use('/' + app.locals.JOB_ID + '/authenticate', passport.authenticate('cas', {
     successRedirect: app.locals.BASE_URL,
     failureRedirect: '/authentication-failure',
     failureFlash: true
 }));
 
-app.use(app.locals.JOB_ID + '/authentication-failure', function(req, res, next) {
+app.use('/' + app.locals.JOB_ID + '/authentication-failure', function(req, res, next) {
     var err = new Error('Not authorized');
     err.status = 401;
     next(err);
 });
 
-app.use(app.locals.JOB_ID + '/', function(req, res, next) {
+app.use('/' + app.locals.JOB_ID + '/', function(req, res, next) {
     if (req.user) {
         next();
     } else {
@@ -87,7 +87,7 @@ app.use(app.locals.JOB_ID + '/', function(req, res, next) {
     }
 });
 
-app.use(app.locals.JOB_ID + '/', proxy({ target: DESTURI, ws: true }));
+app.use('/' + app.locals.JOB_ID + '/', proxy({ target: DESTURI, ws: true }));
 
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
