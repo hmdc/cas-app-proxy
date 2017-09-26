@@ -17,6 +17,7 @@ app.locals.DESTPORT = process.env.DESTPORT || 9000;
 app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 app.locals.SERVICE_URL = process.env.SERVICE_URL;
+app.locals.BASE_URL = process.env.BASE_URL;
 
 const DESTURI = `http://${app.locals.DEST}:${app.locals.DESTPORT}`;
 
@@ -66,7 +67,7 @@ app.use(passport.session());
 
 
 app.use('/authenticate', passport.authenticate('cas', {
-    successRedirect: '/',
+    successRedirect: app.locals.BASE_URL,
     failureRedirect: '/authentication-failure',
     failureFlash: true
 }));
@@ -81,7 +82,7 @@ app.use('/', function(req, res, next) {
     if (req.user) {
         next();
     } else {
-        res.redirect('/authenticate');
+        res.redirect(app.locals.SERVICE_URL);
     }
 });
 
