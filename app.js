@@ -93,7 +93,7 @@ var proxyConfiguration = {
     pathRewrite: {}
 }
 
-proxyConfiguration['pathRewrite'][`^/${app.locals.JOBID}`] = '/';
+proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
 
 app.use('/' + app.locals.JOB_ID + '/', proxy(proxyConfiguration));
 
