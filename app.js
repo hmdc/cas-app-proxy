@@ -19,6 +19,7 @@ app.locals.ENV_DEVELOPMENT = env == 'development';
 app.locals.SERVICE_URL = process.env.SERVICE_URL;
 app.locals.BASE_URL = process.env.BASE_URL;
 app.locals.JOB_ID = process.env.JOB_ID;
+app.locals.REWRITE_PATH = process.env.REWRITE_PATH || false;
 
 const DESTURI = `http://${app.locals.DEST}:${app.locals.DESTPORT}`;
 
@@ -93,7 +94,9 @@ var proxyConfiguration = {
     pathRewrite: {}
 }
 
-proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+if (app.locals.REWRITE_PATH) {
+  proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+}
 
 app.use('/' + app.locals.JOB_ID + '/', proxy(proxyConfiguration));
 
