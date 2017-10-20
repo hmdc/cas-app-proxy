@@ -98,7 +98,10 @@ var proxyConfiguration = {
     target: DESTURI,
     ws: true,
     pathRewrite: {},
-    changeOrigin: true
+    changeOrigin: true,
+    headers: {
+      Origin: DESTURI,
+    }
 }
 
 if (app.locals.REWRITE_PATH) {
