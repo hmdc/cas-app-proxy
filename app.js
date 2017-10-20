@@ -57,13 +57,18 @@ passport.deserializeUser((user, done) => {
     done(null, user);
 });
 
+app.set('trust proxy', 1);
 app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
 }));
+
 app.use(cookieParser());
-app.use(require('express-session')({ secret: 'keyboard cat' }));
+app.use(require('express-session')({
+    secret: 'keyboard cat',
+    cookie: { secure: true }
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -95,7 +100,7 @@ var proxyConfiguration = {
 }
 
 if (app.locals.REWRITE_PATH) {
-  proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+    proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
 }
 
 app.use('/' + app.locals.JOB_ID + '/', proxy(proxyConfiguration));
