@@ -66,8 +66,7 @@ app.use(bodyParser.urlencoded({
 
 app.use(cookieParser());
 app.use(require('express-session')({
-    secret: 'keyboard cat',
-    cookie: { secure: true }
+    secret: 'keyboard cat'
 }));
 app.use(passport.initialize());
 app.use(passport.session());
