@@ -97,7 +97,8 @@ app.use('/' + app.locals.JOB_ID + '/', function(req, res, next) {
 var proxyConfiguration = {
     target: DESTURI,
     ws: true,
-    pathRewrite: {}
+    pathRewrite: {},
+    changeOrigin: true
 }
 
 if (app.locals.REWRITE_PATH) {
