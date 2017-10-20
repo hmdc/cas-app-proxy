@@ -2,7 +2,6 @@ var express = require('express');
 var path = require('path');
 var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
-var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var passport = require('passport');
 var passport_cas = require('passport-cas');
@@ -64,10 +63,13 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-app.use(cookieParser());
 app.use(require('express-session')({
-    secret: 'keyboard cat'
+    secret: 'keyboard cat',
+    cookie: { secure: true },
+    saveUninitialized: true,
+    proxy: true
 }));
+
 app.use(passport.initialize());
 app.use(passport.session());
 
