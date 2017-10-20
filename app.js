@@ -2,7 +2,6 @@ var express = require('express');
 var path = require('path');
 var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
-var bodyParser = require('body-parser');
 var passport = require('passport');
 var passport_cas = require('passport-cas');
 var uuid = require('uuid');
@@ -58,10 +57,6 @@ passport.deserializeUser((user, done) => {
 
 app.set('trust proxy', 1);
 app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({
-    extended: true
-}));
 
 app.use(require('express-session')({
     secret: 'keyboard cat',
