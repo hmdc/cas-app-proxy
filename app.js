@@ -100,7 +100,7 @@ var proxyConfiguration = {
     pathRewrite: {},
     changeOrigin: true,
     headers: {
-      Origin: DESTURI,
+      Origin: DESTURI
     }
 }
 
