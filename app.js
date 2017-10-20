@@ -65,7 +65,7 @@ app.use(bodyParser.urlencoded({
 
 app.use(require('express-session')({
     secret: 'keyboard cat',
-    cookie: { secure: true },
+    cookie: { secure: false, httpOnly: false },
     saveUninitialized: true,
     proxy: true
 }));
