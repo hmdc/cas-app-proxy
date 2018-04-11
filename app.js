@@ -1,5 +1,5 @@
 var express = require('express');
-var router = express.Router();
+var router = express.Router({strict: true});
 var path = require('path');
 var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
@@ -8,6 +8,8 @@ var passport_cas = require('passport-cas');
 var uuid = require('uuid');
 var app = express();
 var env = process.env.NODE_ENV || 'development';
+
+app.enable('strict routing');
 
 app.locals.ENV = env;
 app.locals.SESSION_SECRET = process.env.SESSION_SECRET || uuid.v4();
@@ -18,6 +20,7 @@ app.locals.SERVICE_URL = process.env.SERVICE_URL;
 app.locals.BASE_URL = process.env.BASE_URL;
 app.locals.JOB_ID = process.env.JOB_ID;
 app.locals.REWRITE_PATH = process.env.REWRITE_PATH || false;
+app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
 
 var proxyConfiguration = {
     target: app.locals.DESTINATION,
@@ -100,11 +103,18 @@ router.use('/authentication-failure', function(req, res, next) {
 });
 
 router.use('/', function(req, res, next) {
-    if (req.user) {
-        next();
-    } else {
+    if (req.user == undefined && app.get('SKIP_AUTHENTICATION') == false) {
         res.redirect(req.baseUrl + '/authenticate');
+        return;
     }
+
+    if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
+        res.redirect(req.originalUrl+'/');
+        return;
+    }
+
+    console.log(req.originalUrl);
+    next();    
 });
 
 app.use('/'+app.locals.JOB_ID, router);
