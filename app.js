@@ -1,4 +1,5 @@
 var express = require('express');
+var router = express.Router({strict: true});
 var path = require('path');
 var proxy = require('http-proxy-middleware');
 var logger = require('morgan');
@@ -8,18 +9,29 @@ var uuid = require('uuid');
 var app = express();
 var env = process.env.NODE_ENV || 'development';
 
+app.enable('strict routing');
+
 app.locals.ENV = env;
 app.locals.SESSION_SECRET = process.env.SESSION_SECRET || uuid.v4();
-app.locals.DEST = process.env.DEST || '127.0.0.1';
-app.locals.DESTPORT = process.env.DESTPORT || 9000;
+app.locals.DESTINATION = process.env.DESTINATION || 'http://localhost:8080';
 app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 app.locals.SERVICE_URL = process.env.SERVICE_URL;
 app.locals.BASE_URL = process.env.BASE_URL;
 app.locals.JOB_ID = process.env.JOB_ID;
 app.locals.REWRITE_PATH = process.env.REWRITE_PATH || false;
+app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
 
-const DESTURI = `http://${app.locals.DEST}:${app.locals.DESTPORT}`;
+var proxyConfiguration = {
+    target: app.locals.DESTINATION,
+    ws: true,
+    pathRewrite: {},
+    changeOrigin: true
+};
+
+if (app.locals.REWRITE_PATH) {
+    proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+}
 
 // setup passport for harvard cas
 passport.use(new passport_cas.Strategy({
@@ -55,55 +67,58 @@ passport.deserializeUser((user, done) => {
     done(null, user);
 });
 
+app.set('env', env);
 app.set('trust proxy', 1);
 app.use(logger('dev'));
 
-app.use(require('express-session')({
-    secret: 'keyboard cat',
-    cookie: { secure: false, httpOnly: false },
-    saveUninitialized: true,
-    proxy: true
-}));
+if (app.get('env') === 'production') {
+    app.use(require('express-session')({
+        secret: 'keyboard cat',
+        cookie: { secure: false, httpOnly: false },
+        saveUninitialized: true,
+        resave: true,
+    }));
+} else {
+    app.use(require('express-session')({
+        secret: 'keyboard cat',
+        cookie: {},
+        saveUninitialized: true,
+        resave: true
+    }));
+}
 
 app.use(passport.initialize());
 app.use(passport.session());
 
-
-app.use('/' + app.locals.JOB_ID + '/authenticate', passport.authenticate('cas', {
-    successRedirect: app.locals.BASE_URL,
+router.use('/authenticate', passport.authenticate('cas', {
+    successRedirect: '/',
     failureRedirect: '/authentication-failure',
     failureFlash: true
 }));
 
-app.use('/' + app.locals.JOB_ID + '/authentication-failure', function(req, res, next) {
+router.use('/authentication-failure', function(req, res, next) {
     var err = new Error('Not authorized');
     err.status = 401;
     next(err);
 });
 
-app.use('/' + app.locals.JOB_ID + '/', function(req, res, next) {
-    if (req.user) {
-        next();
-    } else {
-        res.redirect(app.locals.SERVICE_URL);
+router.use('/', function(req, res, next) {
+    if (req.user == undefined && app.get('SKIP_AUTHENTICATION') == false) {
+        res.redirect(req.baseUrl + '/authenticate');
+        return;
     }
+
+    if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
+        res.redirect(req.originalUrl+'/');
+        return;
+    }
+
+    console.log(req.originalUrl);
+    next();    
 });
 
-var proxyConfiguration = {
-    target: DESTURI,
-    ws: true,
-    pathRewrite: {},
-    changeOrigin: true,
-    headers: {
-      Origin: DESTURI
-    }
-}
-
-if (app.locals.REWRITE_PATH) {
-    proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
-}
-
-app.use('/' + app.locals.JOB_ID + '/', proxy(proxyConfiguration));
+app.use('/'+app.locals.JOB_ID, router);
+app.use('/'+app.locals.JOB_ID, proxy(proxyConfiguration));
 
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
@@ -132,4 +147,4 @@ app.use(function(err, req, res, next) {
 });
 
 
-module.exports = app;
+module.exports = app;   
