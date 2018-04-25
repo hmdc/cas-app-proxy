@@ -20,20 +20,20 @@ app.locals.DESTINATION = process.env.DESTINATION || 'http://localhost:8080';
 app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 app.locals.SERVICE_URL = process.env.SERVICE_URL;
-app.locals.BASE_URL = process.env.BASE_URL;
 app.locals.JOB_ID = process.env.JOB_ID;
 app.locals.REWRITE_PATH = process.env.REWRITE_PATH || false;
 app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
 
 var onProxyRes = function (proxyRes, req, res) {
-  //Handling api server redirects
-  if ([307, 308, 301, 302].indexOf(proxyRes.statusCode) > -1 && proxyRes.headers.location) {
-    var redirect = proxyRes.headers.location;
-    console.log('Received code ' + proxyRes.statusCode + ' from API Server for URL - ' + redirect);
-    redirect = redirect.replace('http://localhost:8787', 'https://localhost/peen');
-    console.log('Manipulating header location and redirecting to - ' + redirect);
-    proxyRes.headers.location = redirect;
+  if ([307, 308, 301, 302].indexOf(proxyRes.statusCode) == -1) {
+    return;
   }
+
+  var redirect = proxyRes.headers.location;
+  console.log('Received code ' + proxyRes.statusCode + ' from API Server for URL - ' + redirect);
+  redirect = redirect.replace('http://localhost:8787', 'https://localhost/peen');
+  console.log('Manipulating header location and redirecting to - ' + redirect);
+  proxyRes.headers.location = redirect;
 };
 
 var proxyConfiguration = {
@@ -113,13 +113,17 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 function uppercase_headers(req, res, next) {
-    for (oldkey in req.headers) {
-        var newkey = oldkey.replace(/((?:^|-)[a-z])/g, function(val) { return val.toUpperCase(); });
-        newkey = newkey.replace(/(-Os-)/g, function(val) { return val.toUpperCase(); });
-        req.headers[newkey] = req.headers[oldkey];
-        delete req.headers[oldkey];
-    }
-    next();
+  for (oldkey in req.headers) {
+    var newkey = oldkey.replace(/((?:^|-)[a-z])/g, function (val) {
+      return val.toUpperCase();
+    });
+    newkey = newkey.replace(/(-Os-)/g, function (val) {
+      return val.toUpperCase();
+    });
+    req.headers[newkey] = req.headers[oldkey];
+    delete req.headers[oldkey];
+  }
+  next();
 }
 
 router.use('/authenticate', passport.authenticate('cas', {
