@@ -21,18 +21,17 @@ app.locals.VALIDUSER = process.env.VALIDUSER;
 app.locals.ENV_DEVELOPMENT = env == 'development';
 app.locals.SERVICE_URL = process.env.SERVICE_URL;
 app.locals.JOB_ID = process.env.JOB_ID;
-app.locals.REWRITE_PATH = process.env.REWRITE_PATH || false;
+app.locals.PROXYING_MODE = process.env.PROXYING_MODE || undefined;
 app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
 
-var onProxyRes = function (proxyRes, req, res) {
+// Rstudio needs special proxying.
+var rstudio_onProxyRes = function (proxyRes, req, res) {
   if ([307, 308, 301, 302].indexOf(proxyRes.statusCode) == -1) {
     return;
   }
 
   var redirect = proxyRes.headers.location;
-  console.log('Received code ' + proxyRes.statusCode + ' from API Server for URL - ' + redirect);
-  redirect = redirect.replace('http://localhost:8787', 'https://localhost/peen');
-  console.log('Manipulating header location and redirecting to - ' + redirect);
+  redirect = redirect.replace('http://localhost:8787', app.locals.SERVICE_URL);
   proxyRes.headers.location = redirect;
 };
 
@@ -42,14 +41,18 @@ var proxyConfiguration = {
   pathRewrite: {},
   hostRewrite: true,
   changeOrigin: true,
-  onProxyRes: onProxyRes,
+  onProxyRes: undefined,
   autoRewrite: true,
   httpVersion: '1.0',
   protocolRewrite: 'https'
 };
 
-if (app.locals.REWRITE_PATH) {
+if (app.locals.PROXYING_MODE === 'xpra' || app.locals.PROXYING_MODE === 'rstudio') {
   proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+}
+
+if (app.locals.PROXYING_MODE === 'rstudio') {
+  proxyConfiguration.onProxyRes = rstudio_onProxyRes;
 }
 
 // setup passport for harvard cas
@@ -142,6 +145,18 @@ router.use('/', function (req, res, next) {
   if (req.user == undefined && app.get('SKIP_AUTHENTICATION') == false) {
     res.redirect(req.baseUrl + '/authenticate');
     return;
+  }
+
+  // Xpra proxying requires path query variable.
+  if (app.locals.PROXYING_MODE === 'xpra') {
+    if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
+      res.redirect(req.originalUrl + `/?path=${app.locals.JOB_ID}`);
+      return;
+    }
+    if (req.originalUrl.match(`/${app.locals.JOB_ID}/$`)) {
+      res.redirect(req.originalUrl + `?path=${app.locals.JOB_ID}`);
+      return;
+    }
   }
 
   if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
