@@ -31,7 +31,7 @@ var rstudio_onProxyRes = function (proxyRes, req, res) {
   }
 
   var redirect = proxyRes.headers.location;
-  redirect = redirect.replace('http://localhost:8787', app.locals.SERVICE_URL);
+  redirect = redirect.replace('http://localhost:8787', `/${app.locals.JOB_ID}`);
   proxyRes.headers.location = redirect;
 };
 
