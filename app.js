@@ -1,28 +1,38 @@
-var express = require('express');
-var router = express.Router({
+const express = require('express');
+const router = express.Router({
   strict: true
 });
-var bodyParser = require('body-parser');
-var path = require('path');
-var proxy = require('http-proxy-middleware');
-var logger = require('morgan');
-var passport = require('passport');
-var passport_cas = require('passport-cas');
-var uuid = require('uuid');
-var app = express();
-var env = process.env.NODE_ENV || 'development';
+const url = require('url');
+const proxy = require('http-proxy-middleware');
+const logger = require('morgan');
+const passport = require('passport');
+const passport_cas = require('passport-cas');
+const uuid = require('uuid');
+const app = express();
+const slashes = require("connect-slashes");
 
 app.enable('strict routing');
+app.locals = {
+  environment: process.env.NODE_ENV || 'development',
+  session_secret: process.env.EXPRESS_SESSION_SECRET || uuid.v4(),
+  proxy_destination: process.env.PROXY_DESTINATION || 'http://localhost:8080',
+  cas_valid_user: process.env.CAS_VALID_USER,
+  server_base_url: process.env.CAS_SERVER_BASE_URL,
+  service_url: process.env.CAS_SERVICE_URL,
+  job_id: process.env.JOB_ID,
+  proxying_mode: process.env.PROXYING_MODE,
+  skip_authentication: process.env.SKIP_AUTHENTICATION || false
+};
 
-app.locals.ENV = env;
-app.locals.SESSION_SECRET = process.env.SESSION_SECRET || uuid.v4();
-app.locals.DESTINATION = process.env.DESTINATION || 'http://localhost:8080';
-app.locals.VALIDUSER = process.env.VALIDUSER;
-app.locals.ENV_DEVELOPMENT = env == 'development';
-app.locals.SERVICE_URL = process.env.SERVICE_URL;
-app.locals.JOB_ID = process.env.JOB_ID;
-app.locals.PROXYING_MODE = process.env.PROXYING_MODE || undefined;
-app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
+//app.locals.ENV = env;
+//app.locals.SESSION_SECRET = process.env.SESSION_SECRET || uuid.v4();
+//app.locals.DESTINATION = process.env.DESTINATION || 'http://localhost:8080';
+//app.locals.VALIDUSER = process.env.VALIDUSER;
+//app.locals.ENV_DEVELOPMENT = env == 'development';
+//app.locals.SERVICE_URL = process.env.SERVICE_URL;
+//app.locals.JOB_ID = process.env.JOB_ID;
+//app.locals.PROXYING_MODE = process.env.PROXYING_MODE || undefined;
+//app.locals.SKIP_AUTHENTICATION = process.env.SKIP_AUTHENTICATION || false;
 
 // Rstudio needs special proxying.
 var rstudio_onProxyRes = function (proxyRes, req, res) {
@@ -31,12 +41,12 @@ var rstudio_onProxyRes = function (proxyRes, req, res) {
   }
 
   var redirect = proxyRes.headers.location;
-  redirect = redirect.replace('http://localhost:8787', `/${app.locals.JOB_ID}`);
+  redirect = redirect.replace('http://localhost:8787', `/${app.locals.job_id}`);
   proxyRes.headers.location = redirect;
 };
 
 var proxyConfiguration = {
-  target: app.locals.DESTINATION,
+  target: app.locals.proxy_destination,
   ws: true,
   pathRewrite: {},
   hostRewrite: true,
@@ -47,11 +57,11 @@ var proxyConfiguration = {
   protocolRewrite: 'https'
 };
 
-if (app.locals.PROXYING_MODE === 'xpra' || app.locals.PROXYING_MODE === 'rstudio') {
-  proxyConfiguration['pathRewrite'][`^/${app.locals.JOB_ID}`] = '/';
+if (app.locals.proxying_mode === 'xpra' || app.locals.proxying_mode === 'rstudio') {
+  proxyConfiguration['pathRewrite'][`^/${app.locals.job_id}`] = '/';
 }
 
-if (app.locals.PROXYING_MODE === 'rstudio') {
+if (app.locals.proxying_mode === 'rstudio') {
   proxyConfiguration.onProxyRes = rstudio_onProxyRes;
 }
 
@@ -59,13 +69,13 @@ if (app.locals.PROXYING_MODE === 'rstudio') {
 passport.use(new passport_cas.Strategy({
   version: 'CAS3.0',
   ssoBaseURL: 'https://www.pin1.harvard.edu/cas',
-  serverBaseURL: 'https://aws.sid.hmdc.harvard.edu',
+  serverBaseURL: app.locals.server_base_url,
   validateURL: '/serviceValidate',
-  serviceURL: app.locals.SERVICE_URL
+  serviceURL: app.locals.service_url
 }, function (login, cb) {
 
   switch (login.attributes.netid) {
-    case app.locals.VALIDUSER:
+    case app.locals.cas_valid_user:
       cb(null, login.attributes.netid);
       break;
     case undefined:
@@ -89,7 +99,7 @@ passport.deserializeUser((user, done) => {
   done(null, user);
 });
 
-app.set('env', env);
+app.set('env', app.locals.environment);
 app.set('trust proxy', 1);
 app.use(logger('dev'));
 
@@ -142,36 +152,43 @@ router.use('/authentication-failure', function (req, res, next) {
 });
 
 router.use('/', function (req, res, next) {
-  if (req.user == undefined && app.get('SKIP_AUTHENTICATION') == false) {
+  const {
+    skip_authentication
+  } = app.locals;
+  const {
+    user
+  } = req;
+  const {
+    path
+  } = req.query;
+
+  if (user === undefined && skip_authentication === false) {
     res.redirect(req.baseUrl + '/authenticate');
     return;
   }
 
   // Xpra proxying requires path query variable.
-  if (app.locals.PROXYING_MODE === 'xpra') {
-    if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
-      res.redirect(req.originalUrl + `/?path=${app.locals.JOB_ID}`);
-      return;
-    }
-    if (req.originalUrl.match(`/${app.locals.JOB_ID}/$`)) {
-      res.redirect(req.originalUrl + `?path=${app.locals.JOB_ID}`);
-      return;
-    }
-  }
+  // This will also disable the Xpra top bar in the HTML5 client.
 
-  if (req.originalUrl.match(`/${app.locals.JOB_ID}$`)) {
-    res.redirect(req.originalUrl + '/');
+  if (app.locals.proxying_mode === 'xpra' && path === undefined) {
+    const {
+      originalUrl
+    } = req;
+    const urlWithoutParams = url.parse(originalUrl).pathname;
+    res.redirect(urlWithoutParams + `?path=/${app.locals.job_id}&top_bar=false`);
     return;
   }
 
-  console.log(req.originalUrl);
   next();
 });
 
 
-app.use('/' + app.locals.JOB_ID, router);
-app.use('/' + app.locals.JOB_ID, uppercase_headers);
-app.use('/' + app.locals.JOB_ID, proxy(proxyConfiguration));
+const JobPath = `/${app.locals.job_id}`;
+// This will make sure trailing slash is added
+app.use(new RegExp(`^${JobPath}$`), slashes());
+app.use(JobPath, router);
+app.use(JobPath, uppercase_headers);
+app.use(JobPath, proxy(proxyConfiguration));
 
 app.use(function (req, res, next) {
   var err = new Error('Not Found');
