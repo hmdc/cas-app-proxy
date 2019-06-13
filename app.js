@@ -46,7 +46,8 @@ module.exports = (function () {
   app.use(JobPath, CasAuthentication(passport));
   // Authentication middleware
   app.use(JobPath, isAuthenticated(app.locals));
-  // App specific middleware.
+  // App specific middleware, if any actually exist. Jupyter
+  // doesn't need one.
   const AppMiddleware = middlewares(app.locals);
   if (AppMiddleware) app.use(JobPath, AppMiddleware);
   // Finally proxy to the application.
