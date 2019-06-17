@@ -17,5 +17,5 @@ after authentication
 
 # Proxying modes
 * xpra - use this when proxying to XPRA powered containers. This mode sets following query-string arguments on XPRA HTML5 client URI - remove top bar and set websocket path to ```${JOB_ID}``` as defined in environment variable.
-* rstudio - uppercases headers while proxying, required for RStudio.
+* rstudio - uppercases headers while proxying, required for RStudio.qq
 * empty - uses no special proxying modes. jupyter does not require one.
