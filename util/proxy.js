@@ -13,7 +13,7 @@ module.exports = function ({ proxying_mode, proxy_destination, job_id }) {
     protocolRewrite: 'https'
   };
 
-  const mode = (proxying_mode === undefined) && "default" || proxying_mode;
+  const mode = (proxying_mode === undefined || proxying_mode === "none") && "default" || proxying_mode;
 
   configuration = require(`./proxy/${mode}`)({ proxyConfiguration, job_id });
 
