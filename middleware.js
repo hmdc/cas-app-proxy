@@ -1,4 +1,6 @@
 const logger = require('morgan');
+const session = require('express-session');
+const FileStore = require('session-file-store')(session);
 
 module.exports = function (app) {
   app.set('env', app.locals.environment);
@@ -6,7 +8,8 @@ module.exports = function (app) {
   const JobPath = `/${app.locals.job_id}`;
 
   if (app.get('env') === 'production') {
-    app.use(require('express-session')({
+    app.use(session({
+      store: new FileStore,
       secret: app.locals.session_secret,
       cookie: {
         secure: false,
@@ -17,7 +20,8 @@ module.exports = function (app) {
       resave: true,
     }));
   } else {
-    app.use(require('express-session')({
+    app.use(session({
+      store: new FileStore,
       secret: app.locals.session_secret,
       cookie: {
         path: JobPath
