@@ -1,4 +1,8 @@
-FROM node:4-onbuild
+FROM node:10.16.0-alpine
+WORKDIR /usr/src/app
+COPY package*.json ./
 EXPOSE 8080
 ENV NODE_ENV production
-RUN apt-get -y update
+RUN npm install
+COPY . .
+CMD [ "npm", "start" ]

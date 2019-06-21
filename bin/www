@@ -4,19 +4,29 @@ var fs = require('fs');
 var app = require('../app');
 var https = require('https');
 var http = require('http');
-HTTP_PORT = 8000
-if (app.locals.ENV == 'development') {
-    // This is useful for CAS testing.
-    var credentials = {
-        key: fs.readFileSync('./ssl/self-signed-development.key', 'utf-8'),
-        cert: fs.readFileSync('./ssl/self-signed-development.crt', 'utf-8')
-    };
+var selfsigned = require('selfsigned');
 
-    var secureServer = https.createServer(credentials, app).listen(443, function() {
-        console.log("Listening on 443");
-    });
+HTTP_PORT = 8000
+HTTPS_PORT = 443
+
+if (app.locals.environment == 'development') {
+  let credentials = selfsigned.generate([{
+    name: 'commonName',
+    value: 'aws.development.sid.hmdc.harvard.edu'
+  }, ], {
+    days: 365
+  });
+
+  let httpCredentials = {
+    key: credentials.private,
+    cert: credentials.cert  
+  }; 
+
+  var secureServer = https.createServer(httpCredentials, app).listen(HTTPS_PORT, function () {
+    console.log("Listening on 443");
+  });
 }
 
-var insecureServer = http.createServer(app).listen(HTTP_PORT, function() {
-    console.log('Insecure Server listening on port ' + HTTP_PORT);
+var insecureServer = http.createServer(app).listen(HTTP_PORT, function () {
+  console.log('Insecure Server listening on port ' + HTTP_PORT);
 });
