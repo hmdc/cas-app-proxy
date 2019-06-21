@@ -3,6 +3,7 @@ const { Strategy } = require('passport-cas');
 
 module.exports = function ({
   server_base_url,
+  service_url,
   cas_valid_user
 }) {
 
@@ -11,9 +12,8 @@ module.exports = function ({
     ssoBaseURL: 'https://www.pin1.harvard.edu/cas',
     serverBaseURL: server_base_url,
     validateURL: '/serviceValidate',
-    serviceURL: cas_valid_user
+    serviceURL: service_url 
   }, function (login, cb) {
-
     switch (login.attributes.netid) {
       case cas_valid_user:
         cb(null, login.attributes.netid);

@@ -29,7 +29,7 @@ module.exports = {
         return;
       }
 
-      if (user.netid === cas_valid_user) {
+      if (user === cas_valid_user) {
         next();
         return;
       }

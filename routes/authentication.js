@@ -2,13 +2,13 @@ const {
   Router
 } = require('express');
 
-module.exports = function (passport) {
+module.exports = function (passport, path) {
   const router = Router({
     strict: true
   });
 
   router.use('/authenticate', passport.authenticate('cas', {
-    successRedirect: '/',
+    successRedirect: path,
     failureRedirect: '/authentication-failure',
     failureFlash: true
   }));

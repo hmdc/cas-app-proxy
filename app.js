@@ -30,20 +30,20 @@ module.exports = (function () {
   // Setup passport configuration.
   const passport = Passport({
     server_base_url: app.locals.server_base_url,
+    service_url: app.locals.service_url,
     cas_valid_user: app.locals.cas_valid_user
   });
-
+  
+  applyDefaultMiddlewareTo(app);
   app.use(passport.initialize());
   app.use(passport.session());
-
-  applyDefaultMiddlewareTo(app);
 
   const JobPath = `/${app.locals.job_id}`;
 
   // This will make sure trailing slash is added
   app.use(new RegExp(`^${JobPath}$`), slashes());
   // Authentication routes
-  app.use(JobPath, CasAuthentication(passport));
+  app.use(JobPath, CasAuthentication(passport, JobPath));
   // Authentication middleware
   app.use(JobPath, isAuthenticated(app.locals));
   // App specific middleware, if any actually exist. Jupyter

@@ -3,13 +3,15 @@ const logger = require('morgan');
 module.exports = function (app) {
   app.set('env', app.locals.environment);
   app.use(logger('common'));
+  const JobPath = `/${app.locals.job_id}`;
 
   if (app.get('env') === 'production') {
     app.use(require('express-session')({
       secret: app.locals.session_secret,
       cookie: {
         secure: false,
-        httpOnly: false
+        httpOnly: false,
+        path: JobPath
       },
       saveUninitialized: true,
       resave: true,
@@ -17,7 +19,9 @@ module.exports = function (app) {
   } else {
     app.use(require('express-session')({
       secret: app.locals.session_secret,
-      cookie: {},
+      cookie: {
+        path: JobPath
+      },
       saveUninitialized: true,
       resave: true
     }));
