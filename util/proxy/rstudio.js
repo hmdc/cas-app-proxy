@@ -16,7 +16,7 @@ module.exports = function ({
 
   return Object.assign({}, proxyConfiguration, {
     pathRewrite: {
-      [`^/${jobid}`]: '/'
+      [`^/${job_id}`]: '/'
     },
     onProxyRes: onProxyRes
   });
