@@ -14,7 +14,7 @@ module.exports = function (job_id) {
     const urlWithoutParams = url.parse(originalUrl).pathname;
 
     if (path === undefined) {
-      res.redirect(urlWithoutParams + `?path=/${job_id}&top_bar=false`);
+      res.redirect(urlWithoutParams + `?path=/${job_id}&sound=&floating_menu=&swap_keys=`);
       return;
     }
 
